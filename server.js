@@ -7,6 +7,7 @@ import Database from 'better-sqlite3';
 import crypto from 'node:crypto';
 import { registerWorkflow } from './workflow-server.js';
 import { registerAgents } from './agent-server.js';
+import { createSessionStore, SESSION_TTL_MS } from './session-store.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,15 +16,14 @@ const app = express();
 app.use(cors({ origin: (origin, callback) => callback(null, !origin || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)), credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 
-const sessions = new Set();
+const sessions = createSessionStore();
 app.post('/api/owner/login', (req, res) => {
   if (!process.env.OWNER_TOKEN) return res.status(503).json({ error: 'Owner token is not configured' });
   const supplied = Buffer.from(String(req.body?.token ?? ''));
   const expected = Buffer.from(process.env.OWNER_TOKEN);
   if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) return res.status(401).json({ error: 'Invalid token' });
-  const session = crypto.randomBytes(32).toString('hex');
-  sessions.add(session);
-  res.cookie('iv_session', session, { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production', maxAge: 86400000 });
+  const session = sessions.create();
+  res.cookie('iv_session', session, { httpOnly: true, sameSite: 'strict', secure: process.env.NODE_ENV === 'production', maxAge: SESSION_TTL_MS });
   res.json({ ok: true });
 });
 app.get('/api/owner/session', (req, res) => {
@@ -120,6 +120,11 @@ app.get('/api/data', (req, res) => {
 app.put('/api/records/:key/:id', (req, res) => {
   const { key, id } = req.params;
   if (!['ideas', 'tags', 'savedFilters', 'preferences'].includes(key)) return res.status(400).json({ error: 'Invalid collection' });
+  const value = req.body?.value;
+  if (value !== null && (!value || typeof value !== 'object' || Array.isArray(value))) return res.status(400).json({ error: 'Record value must be an object or null' });
+  if (key === 'preferences' ? id !== 'prefs' : value !== null && value.id !== id) return res.status(400).json({ error: 'Record ID must match the request' });
+  if (value !== null && key === 'ideas' && typeof value.title !== 'string') return res.status(400).json({ error: 'Idea title must be a string' });
+  if (value !== null && ['tags', 'savedFilters'].includes(key) && typeof value.name !== 'string') return res.status(400).json({ error: 'Record name must be a string' });
   if (!Number.isInteger(req.body?.expectedVersion) || req.body.expectedVersion < 0) return res.status(400).json({ error: 'Expected version required' });
   const current = db.prepare(`SELECT value, version FROM ${key} WHERE id = ?`).get(id);
   const currentVersion = current?.version ?? 0;
@@ -136,6 +141,13 @@ app.post('/api/data/:key', (req, res) => {
 });
 
 const PORT = Number(process.env.PORT || 3001);
+app.use('/api', (_req, res) => res.status(404).json({ error: 'API route not found' }));
+app.use((error, _req, res, next) => {
+  if (res.headersSent) return next(error);
+  const status = error.status === 400 || error.status === 413 ? error.status : 500;
+  if (status === 500) console.error('API request failed:', error);
+  res.status(status).json({ error: status === 400 ? 'Invalid JSON request' : status === 413 ? 'Request body too large' : 'Internal server error' });
+});
 if (fs.existsSync(path.join(__dirname, 'dist'))) {
   app.use(express.static(path.join(__dirname, 'dist')));
   app.get('/blog/:slug', async (req, res, next) => {

@@ -29,6 +29,17 @@ test('tasks and posts keep the source idea and reject stale edits', async () => 
       catch { await new Promise((resolve) => setTimeout(resolve, 100)); }
     }
     assert.ok(ready, `Server did not start: ${startupOutput}`);
+    for (const value of [undefined, 'invalid', [], { id: 'different', title: 'Wrong ID' }, { id: 'invalid-record', title: 12 }]) {
+      const invalid = await fetch(`${base}/api/records/ideas/invalid-record`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedVersion: 0, value }) });
+      assert.equal(invalid.status, 400);
+      assert.equal(typeof (await invalid.json()).error, 'string');
+    }
+    const malformed = await fetch(`${base}/api/records/ideas/invalid-record`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: '{broken' });
+    assert.equal(malformed.status, 400);
+    assert.equal((await malformed.json()).error, 'Invalid JSON request');
+    const missing = await fetch(`${base}/api/does-not-exist`);
+    assert.equal(missing.status, 404);
+    assert.equal((await missing.json()).error, 'API route not found');
     const seed = await fetch(`${base}/api/records/ideas/idea-1`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedVersion: 0, value: { id: 'idea-1', title: 'Original' } }) });
     assert.equal(seed.status, 200);
     const taskResponse = await fetch(`${base}/api/work/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ideaId: 'idea-1', title: 'Write test' }) });

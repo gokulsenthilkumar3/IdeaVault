@@ -20,7 +20,7 @@ export default function SettingsPage() {
   const { preferences, setPreference, ideas, tags, savedFilters, importData, syncFromServer, syncStatus } = useStore();
   const [importText, setImportText] = useState('');
   const [showImport, setShowImport] = useState(false);
-  const [conflict, setConflict] = useState(getSyncConflict());
+  const conflict = getSyncConflict();
   const [params, setParams] = useSearchParams();
   const validTabs = ['appearance', 'workflow', 'data', 'integrations'] as const;
   const tab = validTabs.find((item) => item === params.get('tab')) || 'appearance';
@@ -254,8 +254,8 @@ export default function SettingsPage() {
       </>}
 
       {/* ── Export ────────────────────────────────────────────────────── */}
-      {tab === 'data' && <><section className={`card ${styles.section}`}><h2 className={styles.sectionTitle}>Sync health</h2><p>Current state: <strong>{syncStatus}</strong> · {pendingWriteCount()} pending local changes</p><p>Local changes remain queued while offline. Conflicts need your choice before they can continue.</p><button className="btn btn-secondary" disabled={syncBusy} onClick={async () => { setSyncBusy(true); try { await flushPendingWrites(); await syncFromServer(); setConflict(getSyncConflict()); toast.success('Sync checked'); } catch (error) { toast.error(String(error)); } finally { setSyncBusy(false); } }}>Retry sync</button></section>
-      {conflict && <section className={`card ${styles.section}`}><h2 className={styles.sectionTitle}>Resolve sync conflict</h2><p>Record {conflict.key}/{conflict.id} changed elsewhere. Download a backup, then choose which copy to keep.</p><div className={styles.exportRow}><button className="btn btn-secondary" onClick={handleExportJSON}>Download backup</button><button className="btn btn-secondary" onClick={async () => { await resolveSyncConflict('remote'); setConflict(getSyncConflict()); await syncFromServer(); }}>Keep server copy</button><button className="btn btn-danger" onClick={async () => { if (!window.confirm('Replace the server record with your local copy?')) return; await resolveSyncConflict('local'); setConflict(getSyncConflict()); }}>Keep local copy</button></div></section>}
+      {tab === 'data' && <><section className={`card ${styles.section}`}><h2 className={styles.sectionTitle}>Sync health</h2><p>Current state: <strong>{syncStatus}</strong> · {pendingWriteCount()} pending local changes</p><p>Local changes remain queued while offline. Conflicts need your choice before they can continue.</p><button className="btn btn-secondary" disabled={syncBusy} onClick={async () => { setSyncBusy(true); try { await flushPendingWrites(); await syncFromServer(); toast.success('Sync checked'); } catch (error) { toast.error(String(error)); } finally { setSyncBusy(false); } }}>Retry sync</button></section>
+      {conflict && <section className={`card ${styles.section}`}><h2 className={styles.sectionTitle}>Resolve sync conflict</h2><p>Record {conflict.key}/{conflict.id} changed elsewhere. Download a backup, then choose which copy to keep.</p><div className={styles.exportRow}><button className="btn btn-secondary" onClick={handleExportJSON}>Download backup</button><button className="btn btn-secondary" onClick={async () => { await resolveSyncConflict('remote'); await syncFromServer(); }}>Keep server copy</button><button className="btn btn-danger" onClick={async () => { if (!window.confirm('Replace the server record with your local copy?')) return; await resolveSyncConflict('local'); }}>Keep local copy</button></div></section>}
       <section className={`card ${styles.section}`}>
         <h2 className={styles.sectionTitle}>Backups & exports</h2>
         <p className={styles.sectionDesc}>Full JSON includes linked work and relationships when the server is available. CSV and Markdown are readable exports of {activeIdeas.length} active ideas, not full backups.</p>

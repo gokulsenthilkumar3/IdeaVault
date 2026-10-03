@@ -12,7 +12,7 @@ import {
   loadIdeas, saveIdeas, loadTags, saveTags,
   loadSavedFilters, saveSavedFilters,
   loadPreferences, savePreferences,
-  hasPendingWrites, updateServerVersions, cacheServerData, seedServerFromCache, flushPendingWrites,
+  hasPendingWrites, updateServerVersions, cacheServerData, flushPendingWrites, getLocalRevision,
 } from '../lib/storage';
 
 // ─── Store State ──────────────────────────────────────────────────────────────
@@ -207,6 +207,7 @@ function applyFilters(ideas: Idea[], filters: FilterState, tags: Tag[]): Idea[] 
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
+let syncRequest = 0;
 
 export const useStore = create<StoreState>()(
   subscribeWithSelector((set, get) => ({
@@ -578,25 +579,19 @@ export const useStore = create<StoreState>()(
     },
 
     async syncFromServer() {
+      const request = ++syncRequest;
       try {
+        await flushPendingWrites();
+        if (hasPendingWrites() || request !== syncRequest) return;
+        const revision = getLocalRevision();
         const res = await fetch('/api/data');
         if (res.ok) {
           const data = await res.json();
-          if (hasPendingWrites()) {
-            set({ syncStatus: 'pending' });
-            await flushPendingWrites();
-            return;
-          }
+          if (request !== syncRequest) return;
+          // A response requested before a local edit must never replace that edit.
+          if (revision !== getLocalRevision() || hasPendingWrites()) return get().syncFromServer();
           const localIdeas = get().ideas;
           const localTags = get().tags;
-          
-          // If the database is completely fresh but we have data in cache, migrate it to the database
-          if (data.ideas.length === 0 && localIdeas.length > 0) {
-            console.log('Migrating cached data to local database...');
-            seedServerFromCache({ ideas: localIdeas, tags: localTags, savedFilters: get().savedFilters, preferences: get().preferences });
-            set({ syncStatus: 'pending' });
-            return;
-          }
 
           updateServerVersions(data.versions || {});
           const preferences = data.preferences && Object.keys(data.preferences).length > 0
@@ -610,10 +605,11 @@ export const useStore = create<StoreState>()(
             preferences,
             syncStatus: 'synced',
           });
-        } else {
+        } else if (request === syncRequest) {
           set({ syncStatus: 'offline' });
         }
       } catch {
+        if (request !== syncRequest) return;
         console.warn('Local database server not reachable, using localStorage cache.');
         set({ syncStatus: 'offline' });
       }
@@ -630,4 +626,5 @@ if (typeof window !== 'undefined') {
   window.addEventListener('focus', () => {
     useStore.getState().syncFromServer();
   });
+  window.addEventListener('online', () => { void useStore.getState().syncFromServer(); });
 }

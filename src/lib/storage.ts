@@ -41,7 +41,9 @@ function load<T>(key: string, fallback: T): T {
 
 type PendingWrite = { key: string; id: string; value: unknown; expectedVersion: number };
 type Versions = Record<string, Record<string, number>>;
-let flushing = false;
+let flushPromise: Promise<void> | null = null;
+let localRevision = 0;
+export function getLocalRevision(): number { return localRevision; }
 function syncEvent(status: 'pending' | 'synced' | 'offline' | 'conflict') {
   window.dispatchEvent(new CustomEvent('iv-sync', { detail: status }));
 }
@@ -70,12 +72,6 @@ export function cacheServerData(data: { ideas: Idea[]; tags: Tag[]; savedFilters
   localStorage.setItem(KEYS.SAVED_FILTERS, JSON.stringify(data.savedFilters));
   localStorage.setItem(KEYS.PREFERENCES, JSON.stringify(data.preferences));
 }
-export function seedServerFromCache(data: { ideas: Idea[]; tags: Tag[]; savedFilters: SavedFilter[]; preferences: AppPreferences }): void {
-  queueChanges(KEYS.IDEAS, [], data.ideas);
-  queueChanges(KEYS.TAGS, [], data.tags);
-  queueChanges(KEYS.SAVED_FILTERS, [], data.savedFilters);
-  queueChanges(KEYS.PREFERENCES, {}, data.preferences);
-}
 function rows(key: string, value: unknown): Record<string, unknown> {
   if (key === KEYS.PREFERENCES) return { prefs: value };
   return Object.fromEntries((value as { id: string }[]).map((row) => [row.id, row]));
@@ -84,6 +80,7 @@ function queueChanges(key: string, oldValue: unknown, value: unknown): void {
   const endpointMap: Record<string, string> = { [KEYS.IDEAS]: 'ideas', [KEYS.TAGS]: 'tags', [KEYS.SAVED_FILTERS]: 'savedFilters', [KEYS.PREFERENCES]: 'preferences' };
   const collection = endpointMap[key];
   if (!collection) return;
+  localRevision++;
   const before = rows(key, oldValue);
   const after = rows(key, value);
   const versions = load<Versions>(KEYS.VERSIONS, {});
@@ -97,35 +94,39 @@ function queueChanges(key: string, oldValue: unknown, value: unknown): void {
   localStorage.setItem(KEYS.PENDING, JSON.stringify(pending));
   if (pending.length) { syncEvent('pending'); void flushPendingWrites(); }
 }
-export async function flushPendingWrites(): Promise<void> {
-  if (flushing) return;
-  flushing = true;
-  try {
-    while (true) {
-      const pending = load<PendingWrite[]>(KEYS.PENDING, []);
-      if (!pending.length) { syncEvent('synced'); break; }
-      const item = pending[0];
-      let response: Response;
-      try { response = await fetch(`/api/records/${item.key}/${encodeURIComponent(item.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedVersion: item.expectedVersion, value: item.value }) }); }
-      catch { syncEvent('offline'); break; }
-      if (response.status === 409) {
-        const data = await response.json();
-        localStorage.setItem(KEYS.CONFLICT, JSON.stringify({ key: item.key, id: item.id, local: item.value, remote: data.current, remoteVersion: data.version }));
-        syncEvent('conflict'); break;
-      }
-      if (!response.ok) { syncEvent('offline'); break; }
-      const result = await response.json();
-      const versions = load<Versions>(KEYS.VERSIONS, {});
-      versions[item.key] = { ...(versions[item.key] || {}), [item.id]: result.version };
-      updateServerVersions(versions);
-      const latest = load<PendingWrite[]>(KEYS.PENDING, []);
-      if (latest[0]?.key === item.key && latest[0]?.id === item.id) {
-        if (JSON.stringify(latest[0].value) === JSON.stringify(item.value)) latest.shift();
-        else latest[0].expectedVersion = result.version;
-        localStorage.setItem(KEYS.PENDING, JSON.stringify(latest));
-      }
+export function flushPendingWrites(): Promise<void> {
+  if (flushPromise) return flushPromise;
+  flushPromise = drainPendingWrites()
+    .catch(() => { syncEvent('offline'); })
+    .finally(() => { flushPromise = null; });
+  return flushPromise;
+}
+async function drainPendingWrites(): Promise<void> {
+  if (getSyncConflict()) { syncEvent('conflict'); return; }
+  while (true) {
+    const pending = load<PendingWrite[]>(KEYS.PENDING, []);
+    if (!pending.length) { syncEvent('synced'); break; }
+    const item = pending[0];
+    let response: Response;
+    try { response = await fetch(`/api/records/${item.key}/${encodeURIComponent(item.id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expectedVersion: item.expectedVersion, value: item.value }) }); }
+    catch { syncEvent('offline'); break; }
+    if (response.status === 409) {
+      const data = await response.json();
+      localStorage.setItem(KEYS.CONFLICT, JSON.stringify({ key: item.key, id: item.id, local: item.value, remote: data.current, remoteVersion: data.version }));
+      syncEvent('conflict'); break;
     }
-  } finally { flushing = false; }
+    if (!response.ok) { syncEvent('offline'); break; }
+    const result = await response.json();
+    const versions = load<Versions>(KEYS.VERSIONS, {});
+    versions[item.key] = { ...(versions[item.key] || {}), [item.id]: result.version };
+    updateServerVersions(versions);
+    const latest = load<PendingWrite[]>(KEYS.PENDING, []);
+    if (latest[0]?.key === item.key && latest[0]?.id === item.id) {
+      if (JSON.stringify(latest[0].value) === JSON.stringify(item.value)) latest.shift();
+      else latest[0].expectedVersion = result.version;
+      localStorage.setItem(KEYS.PENDING, JSON.stringify(latest));
+    }
+  }
 }
 
 function save<T>(key: string, value: T): void {

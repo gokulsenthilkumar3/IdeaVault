@@ -16,6 +16,9 @@ playwright-report
 *.db-*
 *.bak
 *.local
+.env
+.env.*
+!.env.example
 
 # Editor directories and files
 .vscode/*

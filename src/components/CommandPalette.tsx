@@ -26,7 +26,7 @@ export default function CommandPaletteWrapper() {
 function CommandPalette() {
   const { setCommandPalette, setQuickCapture, ideas, tags, createIdea, openIdea, setFilter } = useStore();
   const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState(0);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const paletteRef = useRef<HTMLDivElement>(null);
@@ -35,8 +35,8 @@ function CommandPalette() {
 
   useEffect(() => {
     previousFocus.current = document.activeElement as HTMLElement;
-    setTimeout(() => inputRef.current?.focus(), 50);
-    return () => previousFocus.current?.focus();
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    return () => { clearTimeout(timer); previousFocus.current?.focus(); };
   }, []);
 
   const staticCommands: Command[] = useMemo(() => [
@@ -104,11 +104,6 @@ function CommandPalette() {
     return fuse.search(query).map((r) => r.item).slice(0, 20);
   }, [query, fuse, allCommands]);
 
-  // Reset selection whenever results list changes
-  useEffect(() => {
-    setSelected(0);
-  }, [results]);
-
   // Group results
   const grouped = useMemo(() => {
     const groups: Record<string, Command[]> = {};
@@ -118,7 +113,15 @@ function CommandPalette() {
     return groups;
   }, [results]);
 
-  const flat = results;
+  // Keyboard navigation must follow the same grouped order as the visible list.
+  const flat = Object.values(grouped).flat();
+  const selected = Math.max(0, flat.findIndex((command) => command.id === selectedId));
+
+  function runCommand(command: Command | undefined) {
+    if (!command) return;
+    setCommandPalette(false);
+    command.action();
+  }
 
   // Build a stable id→index map via useMemo to avoid render-time mutation
   const flatIndexMap = useMemo(() => {
@@ -135,14 +138,13 @@ function CommandPalette() {
   function handleKey(e: React.KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelected((s) => Math.min(s + 1, flat.length - 1));
+      setSelectedId(flat[Math.min(selected + 1, flat.length - 1)]?.id ?? null);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelected((s) => Math.max(s - 1, 0));
+      setSelectedId(flat[Math.max(selected - 1, 0)]?.id ?? null);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      flat[selected]?.action();
-      setCommandPalette(false);
+      runCommand(flat[selected]);
     } else if (e.key === 'Escape') {
       setCommandPalette(false);
     }
@@ -168,7 +170,7 @@ function CommandPalette() {
             className={styles.input}
             placeholder="Search ideas, commands, navigate…"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); setSelectedId(null); }}
             onKeyDown={handleKey}
             aria-label="Command palette search"
             aria-controls="cp-results"
@@ -180,7 +182,7 @@ function CommandPalette() {
             spellCheck={false}
           />
           {query && (
-            <button className={`btn btn-ghost btn-icon-sm`} onClick={() => setQuery('')} aria-label="Clear" title="Clear">
+            <button className={`btn btn-ghost btn-icon-sm`} onClick={() => { setQuery(''); setSelectedId(null); }} aria-label="Clear" title="Clear">
               <X size={13} />
             </button>
           )}
@@ -206,8 +208,8 @@ function CommandPalette() {
                       data-idx={idx}
                       role="option"
                       aria-selected={isSelected}
-                      onClick={() => { cmd.action(); setCommandPalette(false); }}
-                      onMouseEnter={() => setSelected(idx)}
+                      onClick={() => runCommand(cmd)}
+                      onMouseEnter={() => setSelectedId(cmd.id)}
                     >
                       <span className={styles.itemIcon} style={cmd.color ? { color: cmd.color } : {}}>
                         {cmd.icon}

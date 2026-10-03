@@ -35,3 +35,7 @@ Runs can groom, design architecture, implement, test, investigate, and prepare r
 Idea and preference writes use versioned record updates. Offline writes stay in a local queue; conflicting writes pause until the owner chooses a copy in Settings. JSON backup includes linked work, blog posts, subscribers, agent runs, and repository links; restore skips duplicate IDs and creates a pre-import SQLite backup. Do not place credentials in agent names, prompts, notes, or artifacts.
 
 Run `npm run lint`, `npm test`, `npm run build`, and `npm run test:e2e`. Browser tests require Playwright Chromium (`npx playwright install chromium`). GitHub CI runs all four checks on pull requests.
+
+`npm run check` runs lint, Node tests, and the production build together. See [CONTRIBUTING.md](CONTRIBUTING.md) for development conventions and [ROADMAP.md](ROADMAP.md) for proposed improvements and remaining hardening work.
+
+The server is authoritative after queued offline edits have synced. An empty server no longer automatically imports cached ideas; use Settings to import a backup deliberately. Owner sessions expire after 24 hours on both the server and browser.
