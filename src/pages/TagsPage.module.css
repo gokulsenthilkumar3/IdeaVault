@@ -1,0 +1,48 @@
+.page { padding: 28px; overflow-y: auto; height: 100%; display: flex; flex-direction: column; gap: var(--s6); }
+.header { display: flex; align-items: flex-start; justify-content: space-between; }
+.heading { font-size: 26px; font-weight: 800; letter-spacing: -0.4px; }
+.sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+.mergeBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 10px 16px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--r2);
+  font-size: 13px;
+  color: var(--text-accent);
+}
+
+.createForm { padding: 18px 20px; display: flex; flex-direction: column; gap: var(--s3); }
+.createRow { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.colorRow { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.colorSwatch {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid transparent; cursor: pointer;
+  transition: transform var(--dur-fast), border-color var(--dur-fast);
+}
+.colorSwatchSm { width: 14px; height: 14px; }
+.colorSwatch:hover { transform: scale(1.2); }
+.colorActive { border-color: var(--text-primary) !important; transform: scale(1.15); }
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+.tagCard { padding: 14px 16px; display: flex; flex-direction: column; gap: var(--s2); }
+.mergeSource { border-color: var(--accent-border) !important; background: var(--accent-dim) !important; }
+.mergeTarget { border-color: #34d399 !important; background: rgba(52, 211, 153, 0.08) !important; }
+
+.tagHeader { display: flex; align-items: center; justify-content: space-between; }
+.tagColorBadge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: var(--r-full);
+}
+.tagActions { display: flex; align-items: center; gap: 3px; }
+.tagMeta { font-size: 11px; }
+.tagCount { color: var(--text-muted); }
+
+.editForm { display: flex; flex-direction: column; gap: var(--s2); }

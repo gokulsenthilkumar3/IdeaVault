@@ -1,0 +1,200 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg-surface);
+}
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--r2);
+  padding: 0 10px;
+  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+}
+.searchWrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+.searchIcon { color: var(--text-muted); flex-shrink: 0; }
+.searchInput {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 7px 0 !important;
+}
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  flex-shrink: 0;
+}
+.relativeWrap { position: relative; }
+
+/* ── Filter Panel ──────────────────────────────────────────────── */
+.filterPanel {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s6);
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-surface);
+  flex-wrap: wrap;
+  animation: fadeIn var(--dur-fast) var(--ease-out);
+  flex-shrink: 0;
+}
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.filterLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+.chipRow { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+
+/* ── Bulk bar ──────────────────────────────────────────────────── */
+.bulkBar {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 8px 20px;
+  background: var(--accent-dim);
+  border-bottom: 1px solid var(--accent-border);
+  flex-shrink: 0;
+  animation: fadeIn var(--dur-fast) var(--ease-out);
+}
+.bulkCount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-accent);
+  margin-right: 4px;
+}
+
+/* ── Content ───────────────────────────────────────────────────── */
+.content {
+  flex: 1;
+  overflow: auto;
+  padding: 20px;
+}
+
+/* ── Grid ──────────────────────────────────────────────────────── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+/* ── List ──────────────────────────────────────────────────────── */
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 800px;
+}
+
+/* ── Board ─────────────────────────────────────────────────────── */
+.board {
+  display: flex;
+  gap: 14px;
+  height: 100%;
+  overflow-x: auto;
+  padding-bottom: 12px;
+}
+.boardCol {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r3);
+  overflow: hidden;
+}
+.boardColHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  flex-shrink: 0;
+}
+.boardColDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.boardColLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  flex: 1;
+}
+.boardColCount {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 1px 7px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.boardColAdd { opacity: 0; transition: opacity var(--dur-fast); }
+.boardCol:hover .boardColAdd { opacity: 1; }
+.boardColBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.boardColEmpty {
+  padding: 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--r2);
+}
+
+/* ── Timeline ──────────────────────────────────────────────────── */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s8);
+  max-width: 740px;
+}
+.timelineMonth { display: flex; flex-direction: column; gap: var(--s3); }
+.timelineMonthLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding-bottom: var(--s2);
+  border-bottom: 1px solid var(--border);
+}
+.timelineItems { display: flex; flex-direction: column; gap: 6px; }
+.pageIntro { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 16px; padding: 4px 2px 0; }
+.pageIntro p { color: var(--text-secondary); font-size: 13px; }
