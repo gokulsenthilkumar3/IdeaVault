@@ -30,3 +30,6 @@ playwright-report
 *.njsproj
 *.sln
 *.sw?
+
+# Desktop installer output
+release/

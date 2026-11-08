@@ -39,3 +39,11 @@ Run `npm run lint`, `npm test`, `npm run build`, and `npm run test:e2e`. Browser
 `npm run check` runs lint, Node tests, and the production build together. See [CONTRIBUTING.md](CONTRIBUTING.md) for development conventions and [ROADMAP.md](ROADMAP.md) for proposed improvements and remaining hardening work.
 
 The server is authoritative after queued offline edits have synced. An empty server no longer automatically imports cached ideas; use Settings to import a backup deliberately. Owner sessions expire after 24 hours on both the server and browser.
+
+## Windows desktop app
+
+Run `npm run desktop:build` to create a Windows installer in `release/`. The installed app bundles its own runtime, UI, API, and SQLite database; users do not need Node.js or a separately running server. Launch Idea Vault from the Start menu. Closing its window exits the app.
+
+Desktop data is stored in `%APPDATA%/Idea Vault/database.db` (Electron's user data directory) and survives application upgrades. The desktop starts with a fresh database; use Settings backup/export and import to transfer existing development data. Back up your data regularly.
+
+Core idea management works without internet. GitHub, email delivery, and external agent integrations still require their services, credentials, and installed CLIs. This desktop app does not make a public blog reachable from other computers.

@@ -166,6 +166,7 @@ if (fs.existsSync(path.join(__dirname, 'dist'))) {
   });
   app.get('/{*path}', (req, res) => res.sendFile(path.join(__dirname, 'dist', 'index.html')));
 }
-app.listen(PORT, process.env.OWNER_TOKEN ? '0.0.0.0' : '127.0.0.1', () => {
+export const server = app.listen(PORT, process.env.OWNER_TOKEN ? '0.0.0.0' : '127.0.0.1', () => {
   console.log(`SQLite Database Server running on http://localhost:${PORT}`);
 });
+

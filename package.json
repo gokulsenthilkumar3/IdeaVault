@@ -1,54 +1,88 @@
 {
-  "name": "idea-vault",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "engines": {
-    "node": ">=24"
-  },
-  "scripts": {
-    "dev:frontend": "vite",
-    "dev:backend": "node server.js",
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint --deny-warnings",
-    "check": "npm run lint && npm test && npm run build",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs",
-    "test:e2e": "playwright test",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2",
-    "@tanstack/react-query": "^5.103.2",
-    "better-sqlite3": "^13.0.3",
-    "cmdk": "^1.1.1",
-    "concurrently": "^10.0.5",
-    "cors": "^2.8.6",
-    "date-fns": "^4.4.0",
-    "express": "^5.2.1",
-    "fuse.js": "^7.5.0",
-    "lucide-react": "^1.48.0",
-    "nodemailer": "^10.0.10",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-hot-toast": "^2.6.1",
-    "react-markdown": "^10.1.0",
-    "react-router-dom": "^7.18.4",
-    "remark-gfm": "^4.0.1",
-    "uuid": "^14.0.2",
-    "zustand": "^5.0.15"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.63.0",
-    "@types/node": "^24.13.3",
-    "@types/nodemailer": "^8.0.2",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
-    "@vitejs/plugin-react": "^6.1.1",
-    "oxlint": "^1.81.0",
-    "typescript": "~6.0.2",
-    "vite": "^8.3.0"
-  }
+    "name": "idea-vault",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "engines": {
+        "node": ">=24"
+    },
+    "scripts": {
+        "dev:frontend": "vite",
+        "dev:backend": "node server.js",
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "build": "tsc -b && vite build",
+        "lint": "oxlint --deny-warnings",
+        "check": "npm run lint && npm test && npm run build",
+        "test": "node --experimental-strip-types --test tests/*.test.mjs",
+        "test:e2e": "playwright test",
+        "preview": "vite preview",
+        "desktop": "npm run build && electron .",
+        "desktop:build": "npm run build && electron-builder --win nsis --x64"
+    },
+    "dependencies": {
+        "@dnd-kit/core": "^6.3.1",
+        "@dnd-kit/sortable": "^10.0.0",
+        "@dnd-kit/utilities": "^3.2.2",
+        "@tanstack/react-query": "^5.103.2",
+        "better-sqlite3": "^13.0.3",
+        "cmdk": "^1.1.1",
+        "concurrently": "^10.0.5",
+        "cors": "^2.8.6",
+        "date-fns": "^4.4.0",
+        "express": "^5.2.1",
+        "fuse.js": "^7.5.0",
+        "lucide-react": "^1.48.0",
+        "nodemailer": "^10.0.10",
+        "react": "^19.2.8",
+        "react-dom": "^19.2.8",
+        "react-hot-toast": "^2.6.1",
+        "react-markdown": "^10.1.0",
+        "react-router-dom": "^7.18.4",
+        "remark-gfm": "^4.0.1",
+        "uuid": "^14.0.2",
+        "zustand": "^5.0.15"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.63.0",
+        "@types/node": "^24.13.3",
+        "@types/nodemailer": "^8.0.2",
+        "@types/react": "^19.2.18",
+        "@types/react-dom": "^19.2.7",
+        "@vitejs/plugin-react": "^6.1.1",
+        "electron": "^45.2.3",
+        "electron-builder": "^26.18.0",
+        "oxlint": "^1.81.0",
+        "typescript": "~6.0.2",
+        "vite": "^8.3.0"
+    },
+    "main": "desktop/main.js",
+    "description": "Your local idea workspace",
+    "author": "Idea Vault",
+    "build": {
+        "appId": "local.ideavault.desktop",
+        "productName": "Idea Vault",
+        "directories": {
+            "output": "release"
+        },
+        "files": [
+            "dist/**/*",
+            "desktop/**/*",
+            "server.js",
+            "workflow-server.js",
+            "agent-server.js",
+            "session-store.js",
+            "package.json"
+        ],
+        "asarUnpack": [
+            "node_modules/better-sqlite3/**/*"
+        ],
+        "win": {
+            "target": "nsis"
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true,
+            "deleteAppDataOnUninstall": false
+        }
+    }
 }
